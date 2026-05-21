@@ -324,30 +324,33 @@ function busLatLng(bus) {
 
 function busIcon(bus, selected) {
   const route = getRoute(bus.routeId);
-  const color = bus.moving ? route.color : route.color + '88';
-  const size = selected ? 38 : 30;
-  const border = selected ? `border: 2px solid white;` : '';
-  const glow = selected ? `box-shadow: 0 0 12px ${route.color};` : '';
+  const color = bus.moving ? route.color : route.color + '99';
+  const size = selected ? 48 : 36;
+  const glow = selected ? `filter: drop-shadow(0 0 6px ${route.color});` : '';
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size*0.7}" viewBox="0 0 60 42" style="${glow}cursor:pointer;">
+    <!-- Bus body -->
+    <rect x="2" y="4" width="56" height="30" rx="6" fill="${color}" stroke="${selected?'white':'rgba(0,0,0,0.3)'}" stroke-width="${selected?2:1}"/>
+    <!-- Windshield front -->
+    <rect x="42" y="8" width="12" height="12" rx="2" fill="rgba(255,255,255,0.35)"/>
+    <!-- Windows -->
+    <rect x="8" y="8" width="10" height="10" rx="2" fill="rgba(255,255,255,0.35)"/>
+    <rect x="21" y="8" width="10" height="10" rx="2" fill="rgba(255,255,255,0.35)"/>
+    <!-- Door -->
+    <rect x="34" y="10" width="6" height="14" rx="1" fill="rgba(0,0,0,0.2)"/>
+    <!-- Wheels -->
+    <circle cx="14" cy="36" r="6" fill="#222" stroke="#555" stroke-width="1.5"/>
+    <circle cx="14" cy="36" r="3" fill="#444"/>
+    <circle cx="46" cy="36" r="6" fill="#222" stroke="#555" stroke-width="1.5"/>
+    <circle cx="46" cy="36" r="3" fill="#444"/>
+    <!-- Number plate -->
+    <rect x="8" y="18" width="22" height="10" rx="2" fill="rgba(0,0,0,0.3)"/>
+    <text x="19" y="27" text-anchor="middle" font-family="monospace" font-size="7" font-weight="bold" fill="white">${bus.num}</text>
+  </svg>`;
   return L.divIcon({
     className: '',
-    html: `<div style="
-      background:${color};
-      color:#fff;
-      font-family:'Space Mono',monospace;
-      font-size:${selected?8:7}px;
-      font-weight:700;
-      width:${size}px;
-      height:${size*0.6}px;
-      border-radius:5px;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      ${border}
-      ${glow}
-      cursor:pointer;
-    ">${bus.num}</div>`,
-    iconSize: [size, size * 0.6],
-    iconAnchor: [size/2, size*0.3],
+    html: svg,
+    iconSize: [size, size * 0.9],
+    iconAnchor: [size/2, size*0.45],
   });
 }
 
