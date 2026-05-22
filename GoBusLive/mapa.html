@@ -4,64 +4,43 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>GoBusLive — Rastreo de Buses en Tiempo Real</title>
-
-<!-- Leaflet CSS - el mapa real -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-
-<!-- Google Fonts -->
-<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg: #080d16;
-  --bg2: #0e1623;
-  --bg3: #131e2e;
-  --border: rgba(255,255,255,0.07);
-  --border2: rgba(255,255,255,0.12);
-  --text: #e8edf5;
-  --text2: rgba(232,237,245,0.5);
-  --text3: rgba(232,237,245,0.25);
-  --accent: #f5a623;
-  --green: #27c97a;
-  --red: #e74c3c;
+  --bg: #080d16; --bg2: #0e1623; --bg3: #131e2e;
+  --border: rgba(255,255,255,0.07); --border2: rgba(255,255,255,0.12);
+  --text: #e8edf5; --text2: rgba(232,237,245,0.5); --text3: rgba(232,237,245,0.25);
+  --accent: #f5a623; --green: #27c97a; --red: #e74c3c;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { width: 100%; height: 100%; overflow: hidden; background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; }
 
-/* ── TOPBAR ── */
 #topbar {
   position: fixed; top: 0; left: 0; right: 0; height: 52px;
-  background: rgba(8,13,22,0.97);
-  border-bottom: 1px solid var(--border);
-  backdrop-filter: blur(12px);
-  display: flex; align-items: center; padding: 0 18px; gap: 14px;
-  z-index: 1000;
+  background: rgba(8,13,22,0.97); border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; padding: 0 18px; gap: 14px; z-index: 1000;
 }
-.logo { font-family: 'Space Mono', monospace; font-size: 16px; font-weight: 700; color: #fff; letter-spacing: -0.5px; }
+.logo { font-family: 'Space Mono', monospace; font-size: 16px; font-weight: 700; color: #fff; }
 .logo span { color: var(--accent); }
-.live-pill { font-size: 10px; font-weight: 700; background: var(--red); color: #fff; padding: 3px 9px; border-radius: 20px; animation: blink 1.8s infinite; font-family: 'Space Mono', monospace; }
+.live-pill { font-size: 10px; font-weight: 700; background: var(--red); color: #fff; padding: 3px 9px; border-radius: 20px; animation: blink 1.8s infinite; }
 @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.5} }
 
-#searchbar { display: flex; align-items: center; gap: 8px; background: var(--bg3); border: 1px solid var(--border2); border-radius: 8px; padding: 0 12px; transition: border-color 0.2s; }
+#searchbar { display: flex; align-items: center; gap: 8px; background: var(--bg3); border: 1px solid var(--border2); border-radius: 8px; padding: 0 12px; }
 #searchbar:focus-within { border-color: var(--accent); }
-#searchbar svg { width: 14px; height: 14px; color: var(--text3); flex-shrink: 0; }
 #search-input { background: none; border: none; color: var(--text); font-size: 13px; font-family: 'DM Sans', sans-serif; padding: 8px 0; width: 210px; }
 #search-input::placeholder { color: var(--text3); }
 #search-input:focus { outline: none; }
 
 #lang-toggle { margin-left: auto; display: flex; background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
-.lang-btn { font-size: 11px; font-weight: 600; padding: 5px 10px; cursor: pointer; background: none; border: none; color: var(--text2); font-family: 'DM Sans', sans-serif; transition: all 0.15s; }
+.lang-btn { font-size: 11px; font-weight: 600; padding: 5px 10px; cursor: pointer; background: none; border: none; color: var(--text2); font-family: 'DM Sans', sans-serif; }
 .lang-btn.active { background: var(--accent); color: #000; }
-
 #bus-count { font-size: 12px; color: var(--text2); white-space: nowrap; font-family: 'Space Mono', monospace; }
 
-/* ── SEARCH DROPDOWN ── */
 #search-dropdown {
   position: fixed; top: 52px; left: 0; right: 0;
-  background: rgba(14,22,35,0.98);
-  border-bottom: 1px solid var(--border2);
-  z-index: 999; display: none;
-  max-height: 260px; overflow-y: auto;
+  background: rgba(14,22,35,0.98); border-bottom: 1px solid var(--border2);
+  z-index: 999; display: none; max-height: 260px; overflow-y: auto;
 }
 .sd-item { display: flex; align-items: center; gap: 14px; padding: 12px 18px; cursor: pointer; border-bottom: 1px solid var(--border); transition: background 0.15s; }
 .sd-item:hover { background: rgba(255,255,255,0.04); }
@@ -73,37 +52,23 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: var(--bg);
 .sd-status { font-size: 11px; color: var(--green); }
 .sd-empty { padding: 20px 18px; color: var(--text3); font-size: 13px; }
 
-/* ── MAPA ── */
-#map {
-  position: fixed;
-  top: 52px; left: 0; right: 280px; bottom: 0;
-  z-index: 1;
-}
+#map { position: fixed; top: 52px; left: 0; right: 280px; bottom: 0; z-index: 1; }
+.leaflet-tile { filter: brightness(0.4) saturate(0.6); }
 
-/* Estilo oscuro del mapa */
-.leaflet-tile { filter: brightness(0.35) saturate(0.5) hue-rotate(180deg); }
-.leaflet-container { background: #080d16; }
-
-/* ── SIDEBAR ── */
 #sidebar {
   position: fixed; top: 52px; right: 0; bottom: 0; width: 280px;
-  background: var(--bg2);
-  border-left: 1px solid var(--border);
-  display: flex; flex-direction: column;
-  z-index: 500;
+  background: var(--bg2); border-left: 1px solid var(--border);
+  display: flex; flex-direction: column; z-index: 500;
 }
 #sidebar-header { padding: 14px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
 #sidebar-header h2 { font-size: 12px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 1px; }
 #sidebar-header span { font-size: 11px; color: var(--text3); font-family: 'Space Mono', monospace; }
-
 #filter-tabs { display: flex; gap: 4px; padding: 10px 12px; border-bottom: 1px solid var(--border); }
 .ftab { font-size: 11px; font-weight: 500; padding: 4px 10px; border-radius: 5px; cursor: pointer; background: none; border: 1px solid var(--border); color: var(--text2); transition: all 0.15s; }
 .ftab.active { background: var(--accent); border-color: var(--accent); color: #000; font-weight: 700; }
-
 #bus-list { flex: 1; overflow-y: auto; }
 #bus-list::-webkit-scrollbar { width: 4px; }
 #bus-list::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
-
 .bus-item { padding: 12px 16px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.15s; display: flex; align-items: center; gap: 10px; }
 .bus-item:hover { background: rgba(255,255,255,0.03); }
 .bus-item.active { background: rgba(245,166,35,0.08); border-left: 2px solid var(--accent); }
@@ -114,14 +79,10 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: var(--bg);
 .bi-meta { font-size: 10px; color: var(--text3); margin-top: 2px; }
 .bi-speed { font-size: 11px; color: var(--text3); flex-shrink: 0; font-family: 'Space Mono', monospace; }
 
-/* ── PANEL DETALLE ── */
 #detail-panel {
   position: fixed; bottom: 0; left: 0; right: 280px;
-  background: rgba(8,13,22,0.98);
-  border-top: 1px solid var(--border2);
-  backdrop-filter: blur(16px);
-  transform: translateY(100%);
-  transition: transform 0.35s cubic-bezier(0.4,0,0.2,1);
+  background: rgba(8,13,22,0.98); border-top: 1px solid var(--border2);
+  transform: translateY(100%); transition: transform 0.35s cubic-bezier(0.4,0,0.2,1);
   z-index: 800; padding: 0 20px 20px;
 }
 #detail-panel.open { transform: translateY(0); }
@@ -134,13 +95,11 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: var(--bg);
 .dp-company-tag { display: inline-flex; align-items: center; gap: 5px; margin-top: 5px; font-size: 11px; background: var(--bg3); border: 1px solid var(--border2); padding: 2px 9px; border-radius: 4px; color: var(--text2); }
 .dp-close { background: none; border: none; color: var(--text3); font-size: 20px; cursor: pointer; padding: 4px; }
 .dp-close:hover { color: #fff; }
-
 .dp-stats { display: grid; grid-template-columns: repeat(5,1fr); gap: 8px; margin-bottom: 14px; }
 .dp-stat { background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; }
 .dp-stat-l { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 4px; }
 .dp-stat-v { font-size: 18px; font-weight: 700; color: #fff; font-family: 'Space Mono', monospace; line-height: 1; }
 .dp-stat-u { font-size: 10px; color: var(--text3); margin-top: 2px; }
-
 .dp-route { background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; display: flex; align-items: center; gap: 12px; }
 .dp-city { min-width: 90px; }
 .dp-city-label { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px; }
@@ -149,17 +108,17 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: var(--bg);
 .dp-prog { position: absolute; left: 0; top: 0; height: 100%; border-radius: 2px; background: var(--accent); transition: width 0.8s; }
 .dp-dot { width: 13px; height: 13px; border-radius: 50%; border: 2px solid var(--accent); background: var(--bg); position: absolute; top: 50%; transform: translateY(-50%); transition: left 0.8s; box-shadow: 0 0 8px var(--accent); }
 .dp-city2 { min-width: 90px; text-align: right; }
-.bus-icon { transition: transform 0.3s ease-out; }
+
+.bus-icon { transition: transform 0.4s ease-out; }
 </style>
 </head>
 <body>
 
-<!-- TOPBAR -->
 <div id="topbar">
   <div class="logo">Go<span>Bus</span>Live</div>
   <div class="live-pill">EN VIVO</div>
   <div id="searchbar">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(232,237,245,0.25)" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
     <input id="search-input" type="text" placeholder="Número de bus ej: 10050" autocomplete="off">
   </div>
   <div id="lang-toggle">
@@ -169,27 +128,22 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: var(--bg);
   <div id="bus-count">12 buses en ruta</div>
 </div>
 
-<!-- SEARCH DROPDOWN -->
 <div id="search-dropdown"></div>
-
-<!-- MAPA REAL -->
 <div id="map"></div>
 
-<!-- SIDEBAR -->
 <div id="sidebar">
   <div id="sidebar-header">
-    <h2 class="t" data-es="Buses activos" data-en="Active buses">Buses activos</h2>
+    <h2>Buses activos</h2>
     <span id="sb-count">12 / 12</span>
   </div>
   <div id="filter-tabs">
-    <button class="ftab active" data-filter="all"><span class="t" data-es="Todos" data-en="All">Todos</span></button>
-    <button class="ftab" data-filter="moving"><span class="t" data-es="En ruta" data-en="On route">En ruta</span></button>
-    <button class="ftab" data-filter="stopped"><span class="t" data-es="Parados" data-en="Stopped">Parados</span></button>
+    <button class="ftab active" data-filter="all">Todos</button>
+    <button class="ftab" data-filter="moving">En ruta</button>
+    <button class="ftab" data-filter="stopped">Parados</button>
   </div>
   <div id="bus-list"></div>
 </div>
 
-<!-- PANEL DETALLE -->
 <div id="detail-panel">
   <div class="dp-drag"></div>
   <div class="dp-head">
@@ -202,54 +156,21 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: var(--bg);
     <button class="dp-close" id="dp-close">✕</button>
   </div>
   <div class="dp-stats">
-    <div class="dp-stat">
-      <div class="dp-stat-l t" data-es="Velocidad" data-en="Speed">Velocidad</div>
-      <div class="dp-stat-v" id="dp-speed">87</div>
-      <div class="dp-stat-u">km/h</div>
-    </div>
-    <div class="dp-stat">
-      <div class="dp-stat-l t" data-es="Salió hace" data-en="Departed">Salió hace</div>
-      <div class="dp-stat-v" id="dp-ago" style="font-size:14px;padding-top:4px">2h 15m</div>
-      <div class="dp-stat-u"></div>
-    </div>
-    <div class="dp-stat">
-      <div class="dp-stat-l t" data-es="Llega en" data-en="Arrives in">Llega en</div>
-      <div class="dp-stat-v" id="dp-eta" style="font-size:14px;padding-top:4px">7h 40m</div>
-      <div class="dp-stat-u t" data-es="aprox." data-en="approx.">aprox.</div>
-    </div>
-    <div class="dp-stat">
-      <div class="dp-stat-l t" data-es="Pasajeros" data-en="Passengers">Pasajeros</div>
-      <div class="dp-stat-v" id="dp-pass">34</div>
-      <div class="dp-stat-u">/ 45</div>
-    </div>
-    <div class="dp-stat">
-      <div class="dp-stat-l t" data-es="Estado" data-en="Status">Estado</div>
-      <div class="dp-stat-v" id="dp-status" style="font-size:13px;padding-top:5px;color:var(--green)">En ruta</div>
-      <div class="dp-stat-u"></div>
-    </div>
+    <div class="dp-stat"><div class="dp-stat-l">Velocidad</div><div class="dp-stat-v" id="dp-speed">87</div><div class="dp-stat-u">km/h</div></div>
+    <div class="dp-stat"><div class="dp-stat-l">Salió hace</div><div class="dp-stat-v" id="dp-ago" style="font-size:14px;padding-top:4px">2h 15m</div><div class="dp-stat-u"></div></div>
+    <div class="dp-stat"><div class="dp-stat-l">Llega en</div><div class="dp-stat-v" id="dp-eta" style="font-size:14px;padding-top:4px">7h 40m</div><div class="dp-stat-u">aprox.</div></div>
+    <div class="dp-stat"><div class="dp-stat-l">Pasajeros</div><div class="dp-stat-v" id="dp-pass">34</div><div class="dp-stat-u">/ 45</div></div>
+    <div class="dp-stat"><div class="dp-stat-l">Estado</div><div class="dp-stat-v" id="dp-status" style="font-size:13px;padding-top:5px;color:var(--green)">En ruta</div><div class="dp-stat-u"></div></div>
   </div>
   <div class="dp-route">
-    <div class="dp-city">
-      <div class="dp-city-label t" data-es="ORIGEN" data-en="ORIGIN">ORIGEN</div>
-      <div class="dp-city-name" id="dp-origin">Riohacha</div>
-    </div>
-    <div class="dp-line">
-      <div class="dp-prog" id="dp-prog" style="width:22%"></div>
-      <div class="dp-dot" id="dp-dot" style="left:calc(22% - 6px)"></div>
-    </div>
-    <div class="dp-city dp-city2">
-      <div class="dp-city-label t" data-es="DESTINO" data-en="DESTINATION">DESTINO</div>
-      <div class="dp-city-name" id="dp-dest">Bogotá</div>
-    </div>
+    <div class="dp-city"><div class="dp-city-label">ORIGEN</div><div class="dp-city-name" id="dp-origin">Riohacha</div></div>
+    <div class="dp-line"><div class="dp-prog" id="dp-prog" style="width:22%"></div><div class="dp-dot" id="dp-dot" style="left:calc(22% - 6px)"></div></div>
+    <div class="dp-city dp-city2"><div class="dp-city-label">DESTINO</div><div class="dp-city-name" id="dp-dest">Bogotá</div></div>
   </div>
 </div>
 
-<!-- Leaflet JS -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://unpkg.com/leaflet-marker-slide_to@0.0.1/dist/Leaflet.Marker.SlideTo.js"></script>
-
 <script>
-// ── DATOS ──
 const CITIES = {
   'Bogotá':        [4.7110,  -74.0721],
   'Medellín':      [6.2442,  -75.5812],
@@ -275,7 +196,6 @@ const ROUTES = [
   {id:'R6', from:'Cúcuta',       to:'Bogotá',       color:'#1abc9c'},
   {id:'R7', from:'Pasto',        to:'Cali',         color:'#e67e22'},
   {id:'R8', from:'Bucaramanga',  to:'Bogotá',       color:'#f1c40f'},
-  {id:'R9', from:'Santa Marta',  to:'Medellín',     color:'#e91e63'},
 ];
 
 const BUSES = [
@@ -293,7 +213,6 @@ const BUSES = [
   {id:'B12', num:'41200', routeId:'R4', t:0.65, speed:89, pass:42, company:'Rápido Ochoa',     ago:'5h 50m', eta:'3h 10m', moving:true},
 ];
 
-// ── ESTADO ──
 let selectedBus = null;
 let currentFilter = 'all';
 let currentLang = 'es';
@@ -301,30 +220,27 @@ let markers = {};
 let routeLines = {};
 let frame = 0;
 
-// ── MAPA LEAFLET ──
 const map = L.map('map', {
-  center: [5.5, -73.5],
+  center: [6.0, -74.5],
   zoom: 7,
-  zoomControl: false,
+  zoomControl: true,
   attributionControl: false
 });
 
-// Mapa base OpenStreetMap (gratuito)
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   maxZoom: 18,
 }).addTo(map);
 
-// ── FUNCIONES ──
 function getRoute(id) { return ROUTES.find(r => r.id === id); }
 function lerp(a, b, t) { return a + (b - a) * t; }
 
 function busLatLng(bus) {
   const r = getRoute(bus.routeId);
-  const r = getRoute(bus.routeId); const a = CITIES[r.from], b = CITIES[r.to];
+  const a = CITIES[r.from], b = CITIES[r.to];
   return [lerp(a[0], b[0], bus.t), lerp(a[1], b[1], bus.t)];
 }
 
-function calcularAngulo(lat1, lon1, lat2, lon2) {
+function calcAngulo(lat1, lon1, lat2, lon2) {
   const dLon = (lon2 - lon1) * Math.PI / 180;
   const lat1R = lat1 * Math.PI / 180;
   const lat2R = lat2 * Math.PI / 180;
@@ -333,78 +249,61 @@ function calcularAngulo(lat1, lon1, lat2, lon2) {
   return ((Math.atan2(y, x) * 180 / Math.PI) + 360) % 360;
 }
 
-function busIcon(bus, selected) {
+function makeBusIcon(bus, selected) {
   const route = getRoute(bus.routeId);
   const color = bus.moving ? route.color : route.color + '99';
+  const size = selected ? 44 : 34;
   const ring = selected ? `<circle cx="12" cy="12" r="11" fill="${color}" opacity="0.25"/>` : '';
-  const border = selected ? `stroke="white" stroke-width="1.5"` : `stroke="rgba(255,255,255,0.6)" stroke-width="1"`;
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="36" height="36" style="transform:translate(-50%,-50%)">
+  const border = selected ? 'stroke="white" stroke-width="1.5"' : 'stroke="rgba(255,255,255,0.5)" stroke-width="0.8"';
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="${size}" height="${size}">
     ${ring}
     <rect x="7" y="3" width="10" height="17" rx="2" fill="${color}" ${border}/>
-    <rect x="8.5" y="5" width="7" height="3" rx="0.5" fill="rgba(0,0,0,0.6)"/>
-    <rect x="8.5" y="9.5" width="7" height="3" rx="0.5" fill="rgba(0,0,0,0.6)"/>
-    <circle cx="9.5" cy="21" r="1" fill="#1a1a1a" stroke="#888" stroke-width="0.5"/>
-    <circle cx="14.5" cy="21" r="1" fill="#1a1a1a" stroke="#888" stroke-width="0.5"/>
-    <text x="12" y="16" text-anchor="middle" font-family="monospace" font-size="3" font-weight="bold" fill="white">${bus.num}</text>
+    <rect x="8.5" y="5" width="7" height="2.5" rx="0.5" fill="rgba(0,0,0,0.6)"/>
+    <rect x="8.5" y="9" width="7" height="2.5" rx="0.5" fill="rgba(0,0,0,0.6)"/>
+    <circle cx="9.5" cy="21.5" r="1.2" fill="#1a1a1a" stroke="#888" stroke-width="0.5"/>
+    <circle cx="14.5" cy="21.5" r="1.2" fill="#1a1a1a" stroke="#888" stroke-width="0.5"/>
+    <text x="12" y="15.5" text-anchor="middle" font-family="monospace" font-size="2.8" font-weight="bold" fill="white">${bus.num}</text>
   </svg>`;
   return L.divIcon({
     html: svg,
     className: 'bus-icon',
-    iconSize: [36, 36],
-    iconAnchor: [18, 18],
+    iconSize: [size, size],
+    iconAnchor: [size/2, size/2],
   });
 }
 
-// Crear marcadores
 function initMarkers() {
   BUSES.forEach(bus => {
     const pos = busLatLng(bus);
-    const marker = L.marker(pos, { icon: busIcon(bus, false) }).addTo(map);
+    const marker = L.marker(pos, { icon: makeBusIcon(bus, false) }).addTo(map);
     marker.on('click', () => openPanel(bus));
     markers[bus.id] = marker;
   });
 }
 
-// Actualizar posiciones
 function updateMarkers() {
   BUSES.forEach(bus => {
     if (!bus.moving) return;
     const oldPos = markers[bus.id].getLatLng();
     const newPos = busLatLng(bus);
-    
-    // Calculate rotation angle
-    const angle = calcularAngulo(oldPos.lat, oldPos.lng, newPos[0], newPos[1]);
-    
-    // Smooth slide
-    if (markers[bus.id].slideTo) {
-      markers[bus.id].slideTo(newPos, { duration: 2000, keepAtCenter: false });
-    } else {
-      markers[bus.id].setLatLng(newPos);
-    }
-    
-    // Rotate icon
-    const el = markers[bus.id].getElement();
-    if (el) el.style.transform = `rotate(${angle}deg)`;
-    
+    const angle = calcAngulo(oldPos.lat, oldPos.lng, newPos[0], newPos[1]);
+    markers[bus.id].setLatLng(newPos);
     const isSel = selectedBus && selectedBus.id === bus.id;
-    markers[bus.id].setIcon(busIcon(bus, isSel));
+    markers[bus.id].setIcon(makeBusIcon(bus, isSel));
+    const el = markers[bus.id].getElement();
+    if (el) {
+      const svg = el.querySelector('svg');
+      if (svg) svg.style.transform = `rotate(${angle}deg)`;
+    }
   });
 }
 
-// Línea de ruta para bus seleccionado
 function showRouteLine(bus) {
   clearRouteLines();
   const route = getRoute(bus.routeId);
   const a = CITIES[route.from], b = CITIES[route.to];
-  const line = L.polyline([a, b], {
-    color: route.color,
-    weight: 3,
-    opacity: 0.8,
-    dashArray: '8, 6'
-  }).addTo(map);
+  const line = L.polyline([a, b], { color: route.color, weight: 3, opacity: 0.8, dashArray: '8, 6' }).addTo(map);
   routeLines[bus.id] = line;
-
-  // Puntos de origen y destino
   L.circleMarker(a, { radius: 7, color: route.color, fillColor: route.color, fillOpacity: 0.3, weight: 2 }).addTo(map);
   L.circleMarker(b, { radius: 7, color: route.color, fillColor: route.color, fillOpacity: 0.3, weight: 2 }).addTo(map);
 }
@@ -414,11 +313,9 @@ function clearRouteLines() {
   routeLines = {};
 }
 
-// ── PANEL ──
 function openPanel(bus) {
   selectedBus = bus;
   const route = getRoute(bus.routeId);
-
   document.getElementById('dp-icon').style.background = route.color + '30';
   document.getElementById('dp-num').textContent = `Bus ${bus.num}`;
   document.getElementById('dp-route-txt').textContent = `${route.from} → ${route.to}`;
@@ -426,26 +323,18 @@ function openPanel(bus) {
   document.getElementById('dp-speed').textContent = bus.moving ? bus.speed : '0';
   document.getElementById('dp-pass').textContent = bus.pass;
   document.getElementById('dp-ago').textContent = bus.ago;
-  document.getElementById('dp-eta').textContent = bus.moving ? bus.eta : (currentLang==='es'?'Parado':'Stopped');
-  document.getElementById('dp-status').textContent = bus.moving ? (currentLang==='es'?'En ruta':'On route') : (currentLang==='es'?'Parado':'Stopped');
+  document.getElementById('dp-eta').textContent = bus.moving ? bus.eta : 'Parado';
+  document.getElementById('dp-status').textContent = bus.moving ? 'En ruta' : 'Parado';
   document.getElementById('dp-status').style.color = bus.moving ? 'var(--green)' : 'var(--accent)';
   document.getElementById('dp-origin').textContent = route.from;
   document.getElementById('dp-dest').textContent = route.to;
   const pct = Math.round(bus.t * 100);
   document.getElementById('dp-prog').style.width = pct + '%';
   document.getElementById('dp-dot').style.left = `calc(${pct}% - 6px)`;
-
   document.getElementById('detail-panel').classList.add('open');
-
-  // Mostrar ruta en mapa
   showRouteLine(bus);
-
-  // Centrar mapa en el bus
-  map.setView(busLatLng(bus), 7, { animate: true });
-
-  // Actualizar íconos
-  BUSES.forEach(b => markers[b.id].setIcon(busIcon(b, b.id === bus.id)));
-
+  map.setView(busLatLng(bus), 8, { animate: true });
+  BUSES.forEach(b => markers[b.id].setIcon(makeBusIcon(b, b.id === bus.id)));
   renderList();
 }
 
@@ -453,13 +342,12 @@ function closePanel() {
   selectedBus = null;
   document.getElementById('detail-panel').classList.remove('open');
   clearRouteLines();
-  BUSES.forEach(b => markers[b.id].setIcon(busIcon(b, false)));
+  BUSES.forEach(b => markers[b.id].setIcon(makeBusIcon(b, false)));
   renderList();
 }
 
 document.getElementById('dp-close').addEventListener('click', closePanel);
 
-// ── LISTA SIDEBAR ──
 function renderList() {
   const list = document.getElementById('bus-list');
   let filtered = BUSES;
@@ -476,7 +364,7 @@ function renderList() {
         <div class="bi-route">${route.from} → ${route.to}</div>
         <div class="bi-meta">${bus.company}</div>
       </div>
-      <div class="bi-speed">${bus.moving ? bus.speed+'km/h' : (currentLang==='es'?'Parado':'Stopped')}</div>
+      <div class="bi-speed">${bus.moving ? bus.speed+'km/h' : 'Parado'}</div>
     </div>`;
   }).join('');
   document.querySelectorAll('.bus-item').forEach(el => {
@@ -487,7 +375,6 @@ function renderList() {
   });
 }
 
-// ── FILTROS ──
 document.querySelectorAll('.ftab').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.ftab').forEach(b => b.classList.remove('active'));
@@ -497,7 +384,6 @@ document.querySelectorAll('.ftab').forEach(btn => {
   });
 });
 
-// ── BUSCADOR ──
 const searchInput = document.getElementById('search-input');
 const searchDropdown = document.getElementById('search-dropdown');
 
@@ -511,7 +397,7 @@ searchInput.addEventListener('input', e => {
     b.company.toLowerCase().includes(val.toLowerCase())
   );
   if (matches.length === 0) {
-    searchDropdown.innerHTML = `<div class="sd-empty">${currentLang==='es'?'No se encontró ningún bus':'No bus found'}</div>`;
+    searchDropdown.innerHTML = `<div class="sd-empty">No se encontró ningún bus</div>`;
   } else {
     searchDropdown.innerHTML = matches.map(bus => {
       const route = getRoute(bus.routeId);
@@ -522,7 +408,7 @@ searchInput.addEventListener('input', e => {
           <div class="sd-route">${route.from} → ${route.to}</div>
           <div class="sd-company">${bus.company}</div>
         </div>
-        <div class="sd-status">${bus.moving?(currentLang==='es'?'En ruta':'On route'):(currentLang==='es'?'Parado':'Stopped')}</div>
+        <div class="sd-status">${bus.moving?'En ruta':'Parado'}</div>
       </div>`;
     }).join('');
     document.querySelectorAll('.sd-item').forEach(el => {
@@ -541,23 +427,13 @@ document.addEventListener('click', e => {
   }
 });
 
-// ── IDIOMA ──
-function applyLang(lang) {
-  currentLang = lang;
-  document.querySelectorAll('.t[data-' + lang + ']').forEach(el => {
-    el.textContent = el.getAttribute('data-' + lang);
-  });
-  document.querySelectorAll('.lang-btn').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.lang === lang);
-  });
-  document.getElementById('bus-count').textContent = lang==='es' ? `${BUSES.length} buses en ruta` : `${BUSES.length} buses on route`;
-  renderList();
-}
 document.querySelectorAll('.lang-btn').forEach(btn => {
-  btn.addEventListener('click', () => applyLang(btn.dataset.lang));
+  btn.addEventListener('click', () => {
+    currentLang = btn.dataset.lang;
+    document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.dataset.lang === currentLang));
+  });
 });
 
-// ── ANIMACIÓN ──
 function tick() {
   frame++;
   BUSES.forEach(bus => {
@@ -568,9 +444,7 @@ function tick() {
       bus.speed = Math.round(Math.max(55, Math.min(110, bus.speed + (Math.random()-0.5)*14)));
     }
   });
-
   if (frame % 30 === 0) updateMarkers();
-
   if (selectedBus) {
     const bus = BUSES.find(b => b.id === selectedBus.id);
     if (bus) {
@@ -583,7 +457,6 @@ function tick() {
   requestAnimationFrame(tick);
 }
 
-// ── INICIAR ──
 initMarkers();
 renderList();
 tick();
