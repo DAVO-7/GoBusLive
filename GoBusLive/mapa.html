@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GoBusLive - Mapa en Tiempo Real</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        /* --- ESTILOS GENERALES --- */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background-color: #f4f6f9;
+            overflow: hidden;
+        }
+        #map {
+            width: 100vw;
+            height: 100vh;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        /* --- INTERFAZ FLOTANTE DE CLAUDE --- */
+        .map-overlay {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+            background: rgba(14, 22, 35, 0.9);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 12px;
+            width: 320px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            color: #fff;
+        }
+        h2 {
+            font-size: 18px;
+            color: #fff;
+            margin-bottom: 5px;
+        }
+        p {
+            font-size: 13px;
+            color: rgba(232, 237, 245, 0.7);
+            margin-bottom: 15px;
+        }
+        .btn-volver {
+            display: inline-block;
+            background: #f5a623;
+            color: #000;
+            padding: 8px 16px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 13px;
+            transition: opacity 0.2s;
+        }
+        .btn-volver:hover {
+            opacity: 0.85;
+        }
+
+        /* --- DISEÑO DE BUS PREMIUM (Silueta con rotación suave) --- */
+        .custom-bus-icon {
+            transition: transform 0.4s linear; /* Suaviza el giro al cruzar esquinas */
+        }
+        .bus-premium {
+            width: 40px;
+            height: 18px;
+            background: #f5a623; /* Naranja corporativo */
+            border-radius: 4px 10px 4px 4px; /* Frente aerodinámico */
+            position: relative;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            border: 1px solid #ffffff;
+        }
+        /* Parabrisas delantero */
+        .bus-premium::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 2px;
+            width: 8px;
+            height: 100%;
+            background: #080d16;
+            border-radius: 0 7px 2px 0;
+        }
+        /* Ventanas laterales */
+        .bus-premium-windows {
+            position: absolute;
+            top: 3px;
+            left: 4px;
+            width: 22px;
+            height: 4px;
+            display: flex;
+            gap: 2px;
+        }
+        .window {
+            width: 4px;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 1px;
+        }
+        /* Luces traseras rojas */
+        .bus-premium::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: -1px;
+            width: 2px;
+            height: 12px;
+            background: #ff3b30;
+            border-radius: 2px 0 0 2px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="map"></div>
+
+    <div class="map-overlay">
+        <h2>Panel de Control</h2>
+        <p>Monitoreando rutas activas en tiempo real.</p>
+        <a href="index.html" class="btn-volver">← Volver al Inicio</a>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // 1. Inicializar el mapa centrado en Santa Marta con el estilo estándar/verdoso de OpenStreetMap
+        const map = L.map('map').setView([11.2404, -74.1990], 13);
+
+        // Volvemos a colocar el mapa original de Claude (OpenStreetMap estándar)
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        // 2. Coordenadas de la Ruta
+        const rutaCoordenadas = [
+            [11.2404, -74.1990],
+            [11.2435, -74.1950],
+            [11.2470, -74.1910],
+            [11.2510, -74.1880],
+            [11.2550, -74.1900],
+            [11.2580, -74.1950],
+            [11.2540, -74.2010],
+            [11.2460, -74.2050],
+            [11.2404, -74.1990]
+        ];
+
+        // Dibujar la línea de la ruta
+        L.polyline(rutaCoordenadas, { color: '#f5a623', weight: 5, opacity: 0.75 }).addTo(map);
+
+        // 3. HTML de la Silueta de Bus Premium
+        const busHtml = `
+            <div class="bus-premium">
+                <div class="bus-premium-windows">
+                    <div class="window"></div>
+                    <div class="window"></div>
+                    <div class="window"></div>
+                    <div class="window"></div>
+                </div>
+            </div>
+        `;
+
+        // Icono personalizado de Leaflet centrado para rotación
+        const busIcon = L.divIcon({
+            html: busHtml,
+            className: 'custom-bus-icon',
+            iconSize: [40, 18],
+            iconAnchor: [20, 9]
+        });
+
+        // Colocar el marcador en el mapa
+        const busMarker = L.marker(rutaCoordenadas[0], { icon: busIcon }).addTo(map);
+
+        // --- LÓGICA DE MOVIMIENTO FLUIDO Y ROTACIÓN ---
+        let currentIndex = 0;
+        const pasosPorTramo = 45; // Suavidad del movimiento (más pasos = más fluido)
+
+        function calcularAngulo(lat1, lon1, lat2, lon2) {
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const lat1Rad = lat1 * Math.PI / 180;
+            const lat2Rad = lat2 * Math.PI / 180;
+
+            const y = Math.sin(dLon) * Math.cos(lat2Rad);
+            const x = Math.cos(lat1Rad) * Math.sin(lat2Rad) - Math.sin(lat1Rad) * Math.cos(lat2Rad) * Math.cos(dLon);
+            
+            let brng = Math.atan2(y, x) * 180 / Math.PI;
+            return (brng + 360) % 360;
+        }
+
+        function simularMovimientoFluido() {
+            const puntoActual = rutaCoordenadas[currentIndex];
+            const siguienteIndex = (currentIndex + 1) % rutaCoordenadas.length;
+            const siguientePunto = rutaCoordenadas[siguienteIndex];
+
+            // Calcular el ángulo real de la calle
+            const anguloGrados = calcularAngulo(puntoActual[0], puntoActual[1], siguientePunto[0], siguientePunto[1]);
+            const anguloCorregido = anguloGrados - 90; // Alineación con el diseño horizontal CSS
+
+            let pasoActual = 0;
+
+            function avanzarPaso() {
+                if (pasoActual <= pasosPorTramo) {
+                    const fraccion = pasoActual / pasosPorTramo;
+                    const latIntermedia = puntoActual[0] + (siguientePunto[0] - puntoActual[0]) * fraccion;
+                    const lngIntermedia = puntoActual[1] + (siguientePunto[1] - puntoActual[1]) * fraccion;
+
+                    // Mover suavemente el bus
+                    busMarker.setLatLng([latIntermedia, lngIntermedia]);
+
+                    // Aplicar rotación al elemento HTML
+                    const iconoElemento = busMarker.getElement();
+                    if (iconoElemento) {
+                        iconoElemento.style.transform = `${iconoElemento.style.transform.split('rotate')[0]} rotate(${anguloCorregido}deg)`;
+                    }
+
+                    pasoActual++;
+                    setTimeout(avanzarPaso, 35); // Actualización rápida para evitar saltos bruscos
+                } else {
+                    currentIndex = siguienteIndex;
+                    setTimeout(simularMovimientoFluido, 1200); // Pausa breve en paradas principales
+                }
+            }
+
+            avanzarPaso();
+        }
+
+        // Iniciar animación automáticamente
+        setTimeout(simularMovimientoFluido, 1000);
+    </script>
+</body>
+</html>
