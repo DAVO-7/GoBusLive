@@ -27,7 +27,7 @@
             z-index: 1;
         }
 
-        /* --- INTERFAZ FLOTANTE --- */
+        /* --- INTERFAZ FLOTANTE LIMPIA --- */
         .map-overlay {
             position: absolute;
             top: 20px;
@@ -38,7 +38,7 @@
             border: 1px solid rgba(255, 255, 255, 0.1);
             padding: 20px;
             border-radius: 12px;
-            width: 320px;
+            width: 280px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
             color: #fff;
         }
@@ -61,21 +61,6 @@
             margin-bottom: 15px;
             background: #f5a623;
             color: #000;
-        }
-        .legend-container {
-            margin-bottom: 15px;
-            font-size: 12px;
-        }
-        .legend-item {
-            display: flex;
-            align-items: center;
-            margin-bottom: 5px;
-        }
-        .legend-color {
-            width: 12px;
-            height: 12px;
-            border-radius: 3px;
-            margin-right: 8px;
         }
         .btn-volver {
             display: inline-block;
@@ -147,93 +132,74 @@
     <div id="map"></div>
 
     <div class="map-overlay">
-        <h2>Monitoreo Regional</h2>
+        <h2>Monitoreo en Vivo</h2>
         <p>Plataforma de rastreo NAVIUZ.</p>
         <div id="modo-estado" class="status-badge">MODO: DEMOSTRACIÓN</div>
-        
-        <div class="legend-container">
-            <div class="legend-item">
-                <div class="legend-color" style="background: #f5a623;"></div>
-                <span>Ruta Troncal (Bus en Simulación)</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-color" style="background: #2196F3;"></div>
-                <span>Conexión Barranquilla</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-color" style="background: #4CAF50;"></div>
-                <span>Conexión Fundación</span>
-            </div>
-        </div>
-
+        <br>
         <a href="index.html" class="btn-volver">← Volver al Inicio</a>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
         // --- CONFIGURACIÓN DE PRODUCCIÓN ---
-        // INTERRUPTOR PRINCIPAL: Cambia a true cuando tengas la API o Base de Datos real con la empresa.
         const USAR_DATOS_REALES_GPS = false; 
-        const URL_API_EMPRESA = "https://api.naviuz.com/v1/gobuslive/buses"; // Aquí irá el enlace de la empresa
+        const URL_API_EMPRESA = "https://api.naviuz.com/v1/gobuslive/buses";
 
-        // 1. Inicializar Mapa
-        const map = L.map('map').setView([10.9638, -74.5000], 9);
+        // 1. Inicializar Mapa centrado en la ruta
+        const map = L.map('map').setView([11.1350, -74.2250], 11);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; OpenStreetMap contributors'
         }).addTo(map);
 
-        // Coordenadas de respaldo para simulación
+        // Coordenadas del viaje de simulación (Santa Marta - Ciénaga)
         const rutaSimulada = [[11.2404, -74.1990],[11.2010, -74.2180],[11.1350, -74.2250],[11.0110, -74.2500],[11.0110, -74.2500],[11.1350, -74.2250],[11.2010, -74.2180],[11.2404, -74.1990]];
-        const rutaInter2 = [[11.2404, -74.1990], [11.0110, -74.2500], [10.9850, -74.4500], [10.9720, -74.6000], [10.9638, -74.7964]];
-        const rutaInter3 = [[11.2404, -74.1990], [11.0110, -74.2500], [10.8500, -74.2100], [10.5900, -74.1500], [10.5180, -74.1850]];
 
-        L.polyline(rutaSimulada, { color: '#f5a623', weight: 5, opacity: 0.85 }).addTo(map);
-        L.polyline(rutaInter2, { color: '#2196F3', weight: 4, opacity: 0.7, dashArray: '8, 8' }).addTo(map);
-        L.polyline(rutaInter3, { color: '#4CAF50', weight: 4, opacity: 0.7, dashArray: '8, 8' }).addTo(map);
+        // CREAMOS LA LÍNEA DEL RASTRO (Empieza vacía)
+        const lineaRastro = L.polyline([], { color: '#f5a623', weight: 5, opacity: 0.85 }).addTo(map);
 
         // Icono Premium
         const busHtml = `<div class="bus-premium"><div class="bus-premium-windows"><div class="window"></div><div class="window"></div><div class="window"></div><div class="window"></div></div></div>`;
         const busIcon = L.divIcon({ html: busHtml, className: 'custom-bus-icon', iconSize: [40, 18], iconAnchor: [20, 9] });
         const busMarker = L.marker(rutaSimulada[0], { icon: busIcon }).addTo(map);
 
-        // --- MOTOR DE DECISIÓN (SIMULADO O SATELITAL REAL) ---
+        // --- MOTOR DE DECISIÓN ---
         if (USAR_DATOS_REALES_GPS) {
             document.getElementById("modo-estado").innerText = "MODO: SATELITAL EN VIVO";
-            document.getElementById("modo-estado").style.background = "#4CAF50"; // Verde de activo
+            document.getElementById("modo-estado").style.background = "#4CAF50";
             document.getElementById("modo-estado").style.color = "#fff";
             
-            // Activar peticiones al servidor real cada 4 segundos
             conectarServidorGpsReal();
             setInterval(conectarServidorGpsReal, 4000);
         } else {
-            // Seguir con la simulación premium actual para demostraciones de negocio
             iniciarSimulacionDemo();
         }
 
-        // --- FUNCIÓN PRE-CONSTRUIDA PARA CONEXIÓN REAL FUTURA ---
+        // --- SISTEMA SATELITAL FUTURO ---
         async function conectarServidorGpsReal() {
             try {
-                // El sistema intentará descargar las ubicaciones satelitales de los buses
                 const respuesta = await fetch(URL_API_EMPRESA);
                 const datos = await respuesta.json();
                 
-                // Supongamos que la API devuelve { lat: X, lon: Y, rumbo: Z }
                 const nuevaLat = datos.lat;
                 const nuevaLon = datos.lon;
                 const rumboGrados = datos.rumbo - 90;
 
-                // Actualizar marcador de forma instantánea con el satélite
-                busMarker.setLatLng([nuevaLat, nuevaLon]);
+                const nuevaPosicion = [nuevaLat, nuevaLon];
+                busMarker.setLatLng(nuevaPosicion);
+                
+                // Agrega el nuevo punto al rastro real del GPS
+                lineaRastro.addLatLng(nuevaPosicion);
+
                 const iconoElemento = busMarker.getElement();
                 if (iconoElemento) {
                     iconoElemento.style.transform = `${iconoElemento.style.transform.split('rotate')[0]} rotate(${rumboGrados}deg)`;
                 }
             } catch (error) {
-                console.log("Esperando flujo de datos de la empresa...");
+                console.log("Esperando flujo de datos...");
             }
         }
 
-        // --- SISTEMA DE SIMULACIÓN PARA VENTAS (DEMO) ---
+        // --- SISTEMA DE SIMULACIÓN CON EFECTO RASTRO ---
         let currentIndex = 0;
         const pasosPorTramo = 80;
 
@@ -252,13 +218,25 @@
             const anguloCorregido = calcularAngulo(puntoActual[0], puntoActual[1], siguientePunto[0], siguientePunto[1]) - 90;
             let pasoActual = 0;
 
+            // Si vuelve a empezar el circuito, limpiamos el rastro viejo para que vuelva a dibujar de cero
+            if(currentIndex === 0) {
+                lineaRastro.setLatLngs([]);
+            }
+
             function avanzarPaso() {
                 if (pasoActual <= pasosPorTramo) {
                     const fraccion = pasoActual / pasosPorTramo;
-                    busMarker.setLatLng([
-                        puntoActual[0] + (siguientePunto[0] - puntoActual[0]) * fraccion,
-                        puntoActual[1] + (siguientePunto[1] - puntoActual[1]) * fraccion
-                    ]);
+                    const nuevaLat = puntoActual[0] + (siguientePunto[0] - puntoActual[0]) * fraccion;
+                    const nuevaLng = puntoActual[1] + (siguientePunto[1] - puntoActual[1]) * fraccion;
+                    
+                    const coordenadaIntermedia = [nuevaLat, nuevaLng];
+                    
+                    // Movemos el bus
+                    busMarker.setLatLng(coordenadaIntermedia);
+                    
+                    // DIBUJA LA LÍNEA SOLO POR DONDE PASA EL BUS
+                    lineaRastro.addLatLng(coordenadaIntermedia);
+
                     const iconoElemento = busMarker.getElement();
                     if (iconoElemento) {
                         iconoElemento.style.transform = `${iconoElemento.style.transform.split('rotate')[0]} rotate(${anguloCorregido}deg)`;
