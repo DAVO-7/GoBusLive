@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GoBusLive - Mapa en Tiempo Real</title>
+    <title>GoBusLive - Sistema de Monitoreo</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         /* --- ESTILOS GENERALES --- */
@@ -26,7 +27,7 @@
             z-index: 1;
         }
 
-        /* --- INTERFAZ FLOTANTE DE CLAUDE --- */
+        /* --- INTERFAZ FLOTANTE --- */
         .map-overlay {
             position: absolute;
             top: 20px;
@@ -51,6 +52,31 @@
             color: rgba(232, 237, 245, 0.7);
             margin-bottom: 15px;
         }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            background: #f5a623;
+            color: #000;
+        }
+        .legend-container {
+            margin-bottom: 15px;
+            font-size: 12px;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 3px;
+            margin-right: 8px;
+        }
         .btn-volver {
             display: inline-block;
             background: #f5a623;
@@ -66,20 +92,19 @@
             opacity: 0.85;
         }
 
-        /* --- DISEÑO DE BUS PREMIUM (Silueta con rotación suave) --- */
+        /* --- DISEÑO DE BUS PREMIUM --- */
         .custom-bus-icon {
-            transition: transform 0.4s linear; /* Suaviza el giro al cruzar esquinas */
+            transition: transform 0.4s linear;
         }
         .bus-premium {
             width: 40px;
             height: 18px;
-            background: #f5a623; /* Naranja corporativo */
-            border-radius: 4px 10px 4px 4px; /* Frente aerodinámico */
+            background: #f5a623;
+            border-radius: 4px 10px 4px 4px;
             position: relative;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
             border: 1px solid #ffffff;
         }
-        /* Parabrisas delantero */
         .bus-premium::before {
             content: '';
             position: absolute;
@@ -90,7 +115,6 @@
             background: #080d16;
             border-radius: 0 7px 2px 0;
         }
-        /* Ventanas laterales */
         .bus-premium-windows {
             position: absolute;
             top: 3px;
@@ -106,7 +130,6 @@
             background: rgba(255, 255, 255, 0.7);
             border-radius: 1px;
         }
-        /* Luces traseras rojas */
         .bus-premium::after {
             content: '';
             position: absolute;
@@ -124,115 +147,131 @@
     <div id="map"></div>
 
     <div class="map-overlay">
-        <h2>Panel de Control</h2>
-        <p>Monitoreando rutas activas en tiempo real.</p>
+        <h2>Monitoreo Regional</h2>
+        <p>Plataforma de rastreo NAVIUZ.</p>
+        <div id="modo-estado" class="status-badge">MODO: DEMOSTRACIÓN</div>
+        
+        <div class="legend-container">
+            <div class="legend-item">
+                <div class="legend-color" style="background: #f5a623;"></div>
+                <span>Ruta Troncal (Bus en Simulación)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #2196F3;"></div>
+                <span>Conexión Barranquilla</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #4CAF50;"></div>
+                <span>Conexión Fundación</span>
+            </div>
+        </div>
+
         <a href="index.html" class="btn-volver">← Volver al Inicio</a>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // 1. Inicializar el mapa centrado en Santa Marta con el estilo estándar/verdoso de OpenStreetMap
-        const map = L.map('map').setView([11.2404, -74.1990], 13);
+        // --- CONFIGURACIÓN DE PRODUCCIÓN ---
+        // INTERRUPTOR PRINCIPAL: Cambia a true cuando tengas la API o Base de Datos real con la empresa.
+        const USAR_DATOS_REALES_GPS = false; 
+        const URL_API_EMPRESA = "https://api.naviuz.com/v1/gobuslive/buses"; // Aquí irá el enlace de la empresa
 
-        // Volvemos a colocar el mapa original de Claude (OpenStreetMap estándar)
+        // 1. Inicializar Mapa
+        const map = L.map('map').setView([10.9638, -74.5000], 9);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; OpenStreetMap contributors'
         }).addTo(map);
 
-        // 2. Coordenadas de la Ruta
-        const rutaCoordenadas = [
-            [11.2404, -74.1990],
-            [11.2435, -74.1950],
-            [11.2470, -74.1910],
-            [11.2510, -74.1880],
-            [11.2550, -74.1900],
-            [11.2580, -74.1950],
-            [11.2540, -74.2010],
-            [11.2460, -74.2050],
-            [11.2404, -74.1990]
-        ];
+        // Coordenadas de respaldo para simulación
+        const rutaSimulada = [[11.2404, -74.1990],[11.2010, -74.2180],[11.1350, -74.2250],[11.0110, -74.2500],[11.0110, -74.2500],[11.1350, -74.2250],[11.2010, -74.2180],[11.2404, -74.1990]];
+        const rutaInter2 = [[11.2404, -74.1990], [11.0110, -74.2500], [10.9850, -74.4500], [10.9720, -74.6000], [10.9638, -74.7964]];
+        const rutaInter3 = [[11.2404, -74.1990], [11.0110, -74.2500], [10.8500, -74.2100], [10.5900, -74.1500], [10.5180, -74.1850]];
 
-        // Dibujar la línea de la ruta
-        L.polyline(rutaCoordenadas, { color: '#f5a623', weight: 5, opacity: 0.75 }).addTo(map);
+        L.polyline(rutaSimulada, { color: '#f5a623', weight: 5, opacity: 0.85 }).addTo(map);
+        L.polyline(rutaInter2, { color: '#2196F3', weight: 4, opacity: 0.7, dashArray: '8, 8' }).addTo(map);
+        L.polyline(rutaInter3, { color: '#4CAF50', weight: 4, opacity: 0.7, dashArray: '8, 8' }).addTo(map);
 
-        // 3. HTML de la Silueta de Bus Premium
-        const busHtml = `
-            <div class="bus-premium">
-                <div class="bus-premium-windows">
-                    <div class="window"></div>
-                    <div class="window"></div>
-                    <div class="window"></div>
-                    <div class="window"></div>
-                </div>
-            </div>
-        `;
+        // Icono Premium
+        const busHtml = `<div class="bus-premium"><div class="bus-premium-windows"><div class="window"></div><div class="window"></div><div class="window"></div><div class="window"></div></div></div>`;
+        const busIcon = L.divIcon({ html: busHtml, className: 'custom-bus-icon', iconSize: [40, 18], iconAnchor: [20, 9] });
+        const busMarker = L.marker(rutaSimulada[0], { icon: busIcon }).addTo(map);
 
-        // Icono personalizado de Leaflet centrado para rotación
-        const busIcon = L.divIcon({
-            html: busHtml,
-            className: 'custom-bus-icon',
-            iconSize: [40, 18],
-            iconAnchor: [20, 9]
-        });
+        // --- MOTOR DE DECISIÓN (SIMULADO O SATELITAL REAL) ---
+        if (USAR_DATOS_REALES_GPS) {
+            document.getElementById("modo-estado").innerText = "MODO: SATELITAL EN VIVO";
+            document.getElementById("modo-estado").style.background = "#4CAF50"; // Verde de activo
+            document.getElementById("modo-estado").style.color = "#fff";
+            
+            // Activar peticiones al servidor real cada 4 segundos
+            conectarServidorGpsReal();
+            setInterval(conectarServidorGpsReal, 4000);
+        } else {
+            // Seguir con la simulación premium actual para demostraciones de negocio
+            iniciarSimulacionDemo();
+        }
 
-        // Colocar el marcador en el mapa
-        const busMarker = L.marker(rutaCoordenadas[0], { icon: busIcon }).addTo(map);
+        // --- FUNCIÓN PRE-CONSTRUIDA PARA CONEXIÓN REAL FUTURA ---
+        async function conectarServidorGpsReal() {
+            try {
+                // El sistema intentará descargar las ubicaciones satelitales de los buses
+                const respuesta = await fetch(URL_API_EMPRESA);
+                const datos = await respuesta.json();
+                
+                // Supongamos que la API devuelve { lat: X, lon: Y, rumbo: Z }
+                const nuevaLat = datos.lat;
+                const nuevaLon = datos.lon;
+                const rumboGrados = datos.rumbo - 90;
 
-        // --- LÓGICA DE MOVIMIENTO FLUIDO Y ROTACIÓN ---
+                // Actualizar marcador de forma instantánea con el satélite
+                busMarker.setLatLng([nuevaLat, nuevaLon]);
+                const iconoElemento = busMarker.getElement();
+                if (iconoElemento) {
+                    iconoElemento.style.transform = `${iconoElemento.style.transform.split('rotate')[0]} rotate(${rumboGrados}deg)`;
+                }
+            } catch (error) {
+                console.log("Esperando flujo de datos de la empresa...");
+            }
+        }
+
+        // --- SISTEMA DE SIMULACIÓN PARA VENTAS (DEMO) ---
         let currentIndex = 0;
-        const pasosPorTramo = 45; // Suavidad del movimiento (más pasos = más fluido)
+        const pasosPorTramo = 80;
 
         function calcularAngulo(lat1, lon1, lat2, lon2) {
             const dLon = (lon2 - lon1) * Math.PI / 180;
-            const lat1Rad = lat1 * Math.PI / 180;
-            const lat2Rad = lat2 * Math.PI / 180;
-
+            const lat1Rad = lat1 * Math.PI / 180; const lat2Rad = lat2 * Math.PI / 180;
             const y = Math.sin(dLon) * Math.cos(lat2Rad);
             const x = Math.cos(lat1Rad) * Math.sin(lat2Rad) - Math.sin(lat1Rad) * Math.cos(lat2Rad) * Math.cos(dLon);
-            
-            let brng = Math.atan2(y, x) * 180 / Math.PI;
-            return (brng + 360) % 360;
+            return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
         }
 
-        function simularMovimientoFluido() {
-            const puntoActual = rutaCoordenadas[currentIndex];
-            const siguienteIndex = (currentIndex + 1) % rutaCoordenadas.length;
-            const siguientePunto = rutaCoordenadas[siguienteIndex];
-
-            // Calcular el ángulo real de la calle
-            const anguloGrados = calcularAngulo(puntoActual[0], puntoActual[1], siguientePunto[0], siguientePunto[1]);
-            const anguloCorregido = anguloGrados - 90; // Alineación con el diseño horizontal CSS
-
+        function iniciarSimulacionDemo() {
+            const puntoActual = rutaSimulada[currentIndex];
+            const siguienteIndex = (currentIndex + 1) % rutaSimulada.length;
+            const siguientePunto = rutaSimulada[siguienteIndex];
+            const anguloCorregido = calcularAngulo(puntoActual[0], puntoActual[1], siguientePunto[0], siguientePunto[1]) - 90;
             let pasoActual = 0;
 
             function avanzarPaso() {
                 if (pasoActual <= pasosPorTramo) {
                     const fraccion = pasoActual / pasosPorTramo;
-                    const latIntermedia = puntoActual[0] + (siguientePunto[0] - puntoActual[0]) * fraccion;
-                    const lngIntermedia = puntoActual[1] + (siguientePunto[1] - puntoActual[1]) * fraccion;
-
-                    // Mover suavemente el bus
-                    busMarker.setLatLng([latIntermedia, lngIntermedia]);
-
-                    // Aplicar rotación al elemento HTML
+                    busMarker.setLatLng([
+                        puntoActual[0] + (siguientePunto[0] - puntoActual[0]) * fraccion,
+                        puntoActual[1] + (siguientePunto[1] - puntoActual[1]) * fraccion
+                    ]);
                     const iconoElemento = busMarker.getElement();
                     if (iconoElemento) {
                         iconoElemento.style.transform = `${iconoElemento.style.transform.split('rotate')[0]} rotate(${anguloCorregido}deg)`;
                     }
-
                     pasoActual++;
-                    setTimeout(avanzarPaso, 35); // Actualización rápida para evitar saltos bruscos
+                    setTimeout(avanzarPaso, 30);
                 } else {
                     currentIndex = siguienteIndex;
-                    setTimeout(simularMovimientoFluido, 1200); // Pausa breve en paradas principales
+                    setTimeout(iniciarSimulacionDemo, 1500);
                 }
             }
-
             avanzarPaso();
         }
-
-        // Iniciar animación automáticamente
-        setTimeout(simularMovimientoFluido, 1000);
     </script>
 </body>
 </html>
