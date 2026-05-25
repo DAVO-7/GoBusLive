@@ -27,17 +27,23 @@
             z-index: 1;
         }
 
-        /* --- BOTÓN VOLVER AL INICIO MINIMALISTA --- */
-        .btn-volver {
+        /* --- CONTENEDOR DE CONTROL FLOTANTE (Top Left) --- */
+        .top-controls {
             position: absolute;
             top: 20px;
             left: 20px;
             z-index: 1000;
-            display: inline-block;
-            background: rgba(14, 22, 35, 0.9); /* Fondo oscuro premium para que resalte en el mapa */
+            display: flex;
+            gap: 12px; /* Espacio perfecto entre el botón y la barra */
+            align-items: center;
+        }
+
+        /* --- BOTÓN VOLVER AL INICIO --- */
+        .btn-volver {
+            background: rgba(14, 22, 35, 0.9);
             backdrop-filter: blur(8px);
             color: #ffffff;
-            padding: 12px 24px;
+            padding: 12px 20px;
             border-radius: 8px;
             text-decoration: none;
             font-weight: 700;
@@ -45,12 +51,64 @@
             border: 1px solid rgba(255, 255, 255, 0.1);
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
             transition: all 0.2s ease;
+            white-space: nowrap; /* Evita que el texto se parta */
         }
         .btn-volver:hover {
-            background: #f5a623; /* Cambia al naranja GBL al pasar el mouse */
+            background: #f5a623;
             color: #000000;
             border-color: #f5a623;
             transform: translateY(-1px);
+        }
+
+        /* --- BARRA DE BÚSQUEDA FLOTANTE --- */
+        .search-box {
+            display: flex;
+            align-items: center;
+            background: rgba(14, 22, 35, 0.9);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 6px 6px 6px 14px;
+            border-radius: 8px; /* Mismo radio del botón para mantener simetría */
+            width: 320px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
+            transition: all 0.3s ease;
+        }
+        .search-box:focus-within {
+            border-color: #f5a623;
+            box-shadow: 0 4px 20px rgba(245, 166, 35, 0.2);
+            width: 360px; /* Se expande un poquito al hacer clic, un efecto muy pro */
+        }
+        .search-icon {
+            width: 16px;
+            height: 16px;
+            color: rgba(255, 255, 255, 0.4);
+            margin-right: 10px;
+            flex-shrink: 0;
+        }
+        .search-input {
+            background: none;
+            border: none;
+            outline: none;
+            color: #ffffff;
+            font-size: 14px;
+            width: 100%;
+        }
+        .search-input::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+        .search-btn {
+            background: #f5a623;
+            color: #000000;
+            border: none;
+            padding: 6px 14px;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .search-btn:hover {
+            background: #ffffff;
         }
 
         /* --- DISEÑO DE BUS PREMIUM --- */
@@ -107,7 +165,15 @@
 
     <div id="map"></div>
 
-    <a href="index.html" class="btn-volver">Volver al Inicio</a>
+    <div class="top-controls">
+        <a href="index.html" class="btn-volver">Volver al Inicio</a>
+        
+        <div class="search-box">
+            <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <input type="text" placeholder="Buscar bus, placa o empresa..." class="search-input">
+            <button class="search-btn">Buscar</button>
+        </div>
+    </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
@@ -118,7 +184,7 @@
         // Inicializar Mapa centrado en la zona de Santa Marta - Ciénaga
         const map = L.map('map', { zoomControl: false }).setView([11.1350, -74.2250], 11);
         
-        // Movemos los controles de zoom a la derecha para que no estorben al botón
+        // Controles de zoom a la derecha para no interferir con la barra
         L.control.zoom({ position: 'topright' }).addTo(map);
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -128,7 +194,7 @@
         // Coordenadas del viaje de simulación
         const rutaSimulada = [[11.2404, -74.1990],[11.2010, -74.2180],[11.1350, -74.2250],[11.0110, -74.2500],[11.0110, -74.2500],[11.1350, -74.2250],[11.2010, -74.2180],[11.2404, -74.1990]];
 
-        // Línea del rastro dinámico (arranca vacía)
+        // Línea del rastro dinámico
         const lineaRastro = L.polyline([], { color: '#f5a623', weight: 5, opacity: 0.85 }).addTo(map);
 
         // Icono del Bus Premium
@@ -209,6 +275,20 @@
             }
             avanzarPaso();
         }
+
+        // --- LÓGICA DE BÚSQUEDA ---
+        document.querySelector('.search-btn').addEventListener('click', function() {
+            const busqueda = document.querySelector('.search-input').value.trim();
+            if (busqueda !== "") {
+                alert(`Buscando bus o ruta: "${busqueda}"... (Aquí se conectará el filtro de base de datos más adelante)`);
+            }
+        });
+
+        document.querySelector('.search-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                document.querySelector('.search-btn').click();
+            }
+        });
     </script>
 </body>
 </html>
