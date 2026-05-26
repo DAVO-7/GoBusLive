@@ -1,10 +1,9 @@
 <!DOCTYPE html>
 <html lang="es">
-<head>
-    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GoBusLive - Sistema de Monitoreo</title>
+    <title>GoBusLive - Mapa en Tiempo Real</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         /* --- ESTILOS GENERALES --- */
@@ -27,103 +26,61 @@
             z-index: 1;
         }
 
-        /* --- CONTENEDOR DE CONTROL FLOTANTE (Top Left) --- */
-        .top-controls {
+        /* --- INTERFAZ FLOTANTE DE CLAUDE --- */
+        .map-overlay {
             position: absolute;
             top: 20px;
             left: 20px;
             z-index: 1000;
-            display: flex;
-            gap: 12px; /* Espacio perfecto entre el botón y la barra */
-            align-items: center;
-        }
-
-        /* --- BOTÓN VOLVER AL INICIO --- */
-        .btn-volver {
             background: rgba(14, 22, 35, 0.9);
-            backdrop-filter: blur(8px);
-            color: #ffffff;
-            padding: 12px 20px;
-            border-radius: 8px;
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 12px;
+            width: 90%;          /* Ocupa el 90% de la pantalla */
+            max-width: 320px;    /* Pero nunca más de 320px */
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            color: #fff;
+        }
+        h2 {
+            font-size: 18px;
+            color: #fff;
+            margin-bottom: 5px;
+        }
+        p {
+            font-size: 13px;
+            color: rgba(232, 237, 245, 0.7);
+            margin-bottom: 15px;
+        }
+        .btn-volver {
+            display: inline-block;
+            background: #f5a623;
+            color: #000;
+            padding: 8px 16px;
+            border-radius: 6px;
             text-decoration: none;
             font-weight: 700;
-            font-size: 14px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
-            transition: all 0.2s ease;
-            white-space: nowrap; /* Evita que el texto se parta */
+            font-size: 13px;
+            transition: opacity 0.2s;
         }
         .btn-volver:hover {
-            background: #f5a623;
-            color: #000000;
-            border-color: #f5a623;
-            transform: translateY(-1px);
+            opacity: 0.85;
         }
 
-        /* --- BARRA DE BÚSQUEDA FLOTANTE --- */
-        .search-box {
-            display: flex;
-            align-items: center;
-            background: rgba(14, 22, 35, 0.9);
-            backdrop-filter: blur(8px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 6px 6px 6px 14px;
-            border-radius: 8px; /* Mismo radio del botón para mantener simetría */
-            width: 320px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
-            transition: all 0.3s ease;
-        }
-        .search-box:focus-within {
-            border-color: #f5a623;
-            box-shadow: 0 4px 20px rgba(245, 166, 35, 0.2);
-            width: 360px; /* Se expande un poquito al hacer clic, un efecto muy pro */
-        }
-        .search-icon {
-            width: 16px;
-            height: 16px;
-            color: rgba(255, 255, 255, 0.4);
-            margin-right: 10px;
-            flex-shrink: 0;
-        }
-        .search-input {
-            background: none;
-            border: none;
-            outline: none;
-            color: #ffffff;
-            font-size: 14px;
-            width: 100%;
-        }
-        .search-input::placeholder {
-            color: rgba(255, 255, 255, 0.4);
-        }
-        .search-btn {
-            background: #f5a623;
-            color: #000000;
-            border: none;
-            padding: 6px 14px;
-            border-radius: 6px;
-            font-weight: 700;
-            font-size: 13px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-        .search-btn:hover {
-            background: #ffffff;
-        }
-
-        /* --- DISEÑO DE BUS PREMIUM --- */
+        /* --- DISEÑO DE BUS PREMIUM (Silueta con rotación suave) --- */
         .custom-bus-icon {
-            transition: transform 0.4s linear;
+            transition: transform 0.4s linear; /* Suaviza el giro al cruzar esquinas */
         }
         .bus-premium {
             width: 40px;
             height: 18px;
-            background: #f5a623;
-            border-radius: 4px 10px 4px 4px;
+            background: #f5a623; /* Naranja corporativo */
+            border-radius: 4px 10px 4px 4px; /* Frente aerodinámico */
             position: relative;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
             border: 1px solid #ffffff;
         }
+        /* Parabrisas delantero */
         .bus-premium::before {
             content: '';
             position: absolute;
@@ -134,6 +91,7 @@
             background: #080d16;
             border-radius: 0 7px 2px 0;
         }
+        /* Ventanas laterales */
         .bus-premium-windows {
             position: absolute;
             top: 3px;
@@ -149,6 +107,7 @@
             background: rgba(255, 255, 255, 0.7);
             border-radius: 1px;
         }
+        /* Luces traseras rojas */
         .bus-premium::after {
             content: '';
             position: absolute;
@@ -165,130 +124,116 @@
 
     <div id="map"></div>
 
-    <div class="top-controls">
-        <a href="index.html" class="btn-volver">Volver al Inicio</a>
-        
-        <div class="search-box">
-            <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-            <input type="text" placeholder="Buscar bus, placa o empresa..." class="search-input">
-            <button class="search-btn">Buscar</button>
-        </div>
+    <div class="map-overlay">
+        <h2>Panel de Control</h2>
+        <p>Monitoreando rutas activas en tiempo real.</p>
+        <a href="index.html" class="btn-volver">← Volver al Inicio</a>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // --- CONFIGURACIÓN DE OPERACIÓN ---
-        const USAR_DATOS_REALES_GPS = false; 
-        const URL_API_EMPRESA = "https://api.naviuz.com/v1/gobuslive/buses";
+        // 1. Inicializar el mapa centrado en Santa Marta con el estilo estándar/verdoso de OpenStreetMap
+        const map = L.map('map').setView([11.2404, -74.1990], 13);
 
-        // Inicializar Mapa centrado en la zona de Santa Marta - Ciénaga
-        const map = L.map('map', { zoomControl: false }).setView([11.1350, -74.2250], 11);
-        
-        // Controles de zoom a la derecha para no interferir con la barra
-        L.control.zoom({ position: 'topright' }).addTo(map);
-
+        // Volvemos a colocar el mapa original de Claude (OpenStreetMap estándar)
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; OpenStreetMap contributors'
         }).addTo(map);
 
-        // Coordenadas del viaje de simulación
-        const rutaSimulada = [[11.2404, -74.1990],[11.2010, -74.2180],[11.1350, -74.2250],[11.0110, -74.2500],[11.0110, -74.2500],[11.1350, -74.2250],[11.2010, -74.2180],[11.2404, -74.1990]];
+        // 2. Coordenadas de la Ruta
+        const rutaCoordenadas = [
+            [11.2404, -74.1990],
+            [11.2435, -74.1950],
+            [11.2470, -74.1910],
+            [11.2510, -74.1880],
+            [11.2550, -74.1900],
+            [11.2580, -74.1950],
+            [11.2540, -74.2010],
+            [11.2460, -74.2050],
+            [11.2404, -74.1990]
+        ];
 
-        // Línea del rastro dinámico
-        const lineaRastro = L.polyline([], { color: '#f5a623', weight: 5, opacity: 0.85 }).addTo(map);
+        // Dibujar la línea de la ruta
+        L.polyline(rutaCoordenadas, { color: '#f5a623', weight: 5, opacity: 0.75 }).addTo(map);
 
-        // Icono del Bus Premium
-        const busHtml = `<div class="bus-premium"><div class="bus-premium-windows"><div class="window"></div><div class="window"></div><div class="window"></div><div class="window"></div></div></div>`;
-        const busIcon = L.divIcon({ html: busHtml, className: 'custom-bus-icon', iconSize: [40, 18], iconAnchor: [20, 9] });
-        const busMarker = L.marker(rutaSimulada[0], { icon: busIcon }).addTo(map);
+        // 3. HTML de la Silueta de Bus Premium
+        const busHtml = `
+            <div class="bus-premium">
+                <div class="bus-premium-windows">
+                    <div class="window"></div>
+                    <div class="window"></div>
+                    <div class="window"></div>
+                    <div class="window"></div>
+                </div>
+            </div>
+        `;
 
-        // --- SISTEMA DE CONTROL DE FLUJO GBL ---
-        if (USAR_DATOS_REALES_GPS) {
-            conectarServidorGpsReal();
-            setInterval(conectarServidorGpsReal, 4000);
-        } else {
-            iniciarSimulacionDemo();
-        }
+        // Icono personalizado de Leaflet centrado para rotación
+        const busIcon = L.divIcon({
+            html: busHtml,
+            className: 'custom-bus-icon',
+            iconSize: [40, 18],
+            iconAnchor: [20, 9]
+        });
 
-        async function conectarServidorGpsReal() {
-            try {
-                const respuesta = await fetch(URL_API_EMPRESA);
-                const datos = await respuesta.json();
-                const nuevaPosicion = [datos.lat, datos.lon];
-                const rumboGrados = datos.rumbo - 90;
+        // Colocar el marcador en el mapa
+        const busMarker = L.marker(rutaCoordenadas[0], { icon: busIcon }).addTo(map);
 
-                busMarker.setLatLng(nuevaPosicion);
-                lineaRastro.addLatLng(nuevaPosicion);
-
-                const iconoElemento = busMarker.getElement();
-                if (iconoElemento) {
-                    iconoElemento.style.transform = `${iconoElemento.style.transform.split('rotate')[0]} rotate(${rumboGrados}deg)`;
-                }
-            } catch (error) {
-                console.log("Esperando flujo de datos...");
-            }
-        }
-
-        // --- SIMULACIÓN CON RASTRO ---
+        // --- LÓGICA DE MOVIMIENTO FLUIDO Y ROTACIÓN ---
         let currentIndex = 0;
-        const pasosPorTramo = 80;
+        const pasosPorTramo = 45; // Suavidad del movimiento (más pasos = más fluido)
 
         function calcularAngulo(lat1, lon1, lat2, lon2) {
             const dLon = (lon2 - lon1) * Math.PI / 180;
-            const lat1Rad = lat1 * Math.PI / 180; const lat2Rad = lat2 * Math.PI / 180;
+            const lat1Rad = lat1 * Math.PI / 180;
+            const lat2Rad = lat2 * Math.PI / 180;
+
             const y = Math.sin(dLon) * Math.cos(lat2Rad);
             const x = Math.cos(lat1Rad) * Math.sin(lat2Rad) - Math.sin(lat1Rad) * Math.cos(lat2Rad) * Math.cos(dLon);
-            return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+            
+            let brng = Math.atan2(y, x) * 180 / Math.PI;
+            return (brng + 360) % 360;
         }
 
-        function iniciarSimulacionDemo() {
-            const puntoActual = rutaSimulada[currentIndex];
-            const siguienteIndex = (currentIndex + 1) % rutaSimulada.length;
-            const siguientePunto = rutaSimulada[siguienteIndex];
-            const anguloCorregido = calcularAngulo(puntoActual[0], puntoActual[1], siguientePunto[0], siguientePunto[1]) - 90;
-            let pasoActual = 0;
+        function simularMovimientoFluido() {
+            const puntoActual = rutaCoordenadas[currentIndex];
+            const siguienteIndex = (currentIndex + 1) % rutaCoordenadas.length;
+            const siguientePunto = rutaCoordenadas[siguienteIndex];
 
-            if(currentIndex === 0) {
-                lineaRastro.setLatLngs([]);
-            }
+            // Calcular el ángulo real de la calle
+            const anguloGrados = calcularAngulo(puntoActual[0], puntoActual[1], siguientePunto[0], siguientePunto[1]);
+            const anguloCorregido = anguloGrados - 90; // Alineación con el diseño horizontal CSS
+
+            let pasoActual = 0;
 
             function avanzarPaso() {
                 if (pasoActual <= pasosPorTramo) {
                     const fraccion = pasoActual / pasosPorTramo;
-                    const nuevaLat = puntoActual[0] + (siguientePunto[0] - puntoActual[0]) * fraccion;
-                    const nuevaLng = puntoActual[1] + (siguientePunto[1] - puntoActual[1]) * fraccion;
-                    const coordenadaIntermedia = [nuevaLat, nuevaLng];
-                    
-                    busMarker.setLatLng(coordenadaIntermedia);
-                    lineaRastro.addLatLng(coordenadaIntermedia);
+                    const latIntermedia = puntoActual[0] + (siguientePunto[0] - puntoActual[0]) * fraccion;
+                    const lngIntermedia = puntoActual[1] + (siguientePunto[1] - puntoActual[1]) * fraccion;
 
+                    // Mover suavemente el bus
+                    busMarker.setLatLng([latIntermedia, lngIntermedia]);
+
+                    // Aplicar rotación al elemento HTML
                     const iconoElemento = busMarker.getElement();
                     if (iconoElemento) {
                         iconoElemento.style.transform = `${iconoElemento.style.transform.split('rotate')[0]} rotate(${anguloCorregido}deg)`;
                     }
+
                     pasoActual++;
-                    setTimeout(avanzarPaso, 30);
+                    setTimeout(avanzarPaso, 35); // Actualización rápida para evitar saltos bruscos
                 } else {
                     currentIndex = siguienteIndex;
-                    setTimeout(iniciarSimulacionDemo, 1500);
+                    setTimeout(simularMovimientoFluido, 1200); // Pausa breve en paradas principales
                 }
             }
+
             avanzarPaso();
         }
 
-        // --- LÓGICA DE BÚSQUEDA ---
-        document.querySelector('.search-btn').addEventListener('click', function() {
-            const busqueda = document.querySelector('.search-input').value.trim();
-            if (busqueda !== "") {
-                alert(`Buscando bus o ruta: "${busqueda}"... (Aquí se conectará el filtro de base de datos más adelante)`);
-            }
-        });
-
-        document.querySelector('.search-input').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                document.querySelector('.search-btn').click();
-            }
-        });
+        // Iniciar animación automáticamente
+        setTimeout(simularMovimientoFluido, 1000);
     </script>
 </body>
 </html>
