@@ -28,19 +28,31 @@
             left: 0;
             z-index: 1;
 .map-overlay {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            right: 10px; /* Esto mantiene el cuadro dentro de la pantalla */
-            z-index: 1000;
-            background: rgba(14, 22, 35, 0.9);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        z-index: 1000;
+        background: rgba(14, 22, 35, 0.9);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        color: #fff;
+        width: 100%;
+        max-width: 320px;
+        box-sizing: border-box;
+    }
+
+    /* Ajuste para que no fuerce el zoom en móviles */
+    @media (max-width: 480px) {
+        .map-overlay {
+            width: calc(100% - 40px);
+            left: 20px;
+            right: 20px;
             padding: 15px;
-            border-radius: 12px;
-            width: auto; /* Se ajusta automáticamente */
-            max-width: 320px; /* Pero no se pasa de este tamaño */
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+    }
             color: #fff;
         }            max-width: 320px;    /* Pero nunca más de 320px */
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
