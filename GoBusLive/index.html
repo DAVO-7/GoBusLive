@@ -19,20 +19,24 @@ html { scroll-behavior: smooth; }
 body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; overflow-x: hidden; }
 
 nav {
-  position: fixed; top: 0; left: 0; right: 0; height: 70px; /* Aumenté la altura */
+  position: fixed; top: 0; left: 0; right: 0; height: 60px; /* Altura estándar */
   background: rgba(8,13,22,0.92);
   border-bottom: 1px solid rgba(255,255,255,0.07);
   backdrop-filter: blur(12px);
   display: flex; align-items: center; justify-content: space-between;
   padding: 0 20px; z-index: 100;
-  margin-bottom: 20px; /* Separación extra */
 }
 
 #hero {
   min-height: 100vh;
-  padding-top: 100px; /* Esto da aire extra desde el tope */
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  /* ... resto de tu código ... */
+  text-align: center; 
+  padding: 80px 24px 60px; /* padding-top de 80px da el aire necesario */
+  position: relative; overflow: hidden;
+  background-image: linear-gradient(rgba(8, 13, 22, 0.65), rgba(8, 13, 22, 0.85)), url('bus.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
 }
 .hero-badge {
   display: inline-flex; align-items: center; gap: 8px;
