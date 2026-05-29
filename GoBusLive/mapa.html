@@ -2,6 +2,8 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GoBusLive - Mapa</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -16,7 +18,19 @@
         }
         .btn-volver {
             background: #0f172a; color: #fff; padding: 12px 16px;
-            border-radius: 10px; text-decoration: none; font-weight: bold;
+            border-radius: 10px; text-decoration: none; font-weight: bold; white-space: nowrap;
+        }
+        .search-bar {
+            flex-grow: 1; background: #0f172a; padding: 8px;
+            border-radius: 10px; display: flex; align-items: center;
+        }
+        .search-bar input {
+            background: transparent; border: none; color: white;
+            padding: 5px; width: 100%; font-size: 14px;
+        }
+        .search-bar button {
+            background: #f5a623; border: none; padding: 8px 12px;
+            border-radius: 6px; font-weight: bold; cursor: pointer;
         }
     </style>
 </head>
@@ -24,16 +38,18 @@
     <div id="map"></div>
     <div class="controls-container">
         <a href="index.html" class="btn-volver">← Volver</a>
+        <div class="search-bar">
+            <input type="text" id="busIdInput" placeholder="ID Bus: 67942232">
+            <button onclick="actualizarPosicion()">Buscar</button>
+        </div>
     </div>
 
     <script>
         const map = L.map('map').setView([4.4389, -75.2322], 13);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-        
-        // Marcador que se moverá
-        var marker = L.marker([0, 0]).addTo(map);
+        var marker = L.marker([4.4389, -75.2322]).addTo(map);
 
-        // CONFIGURACIÓN DE TRACCAR
+        // RELLENA ESTO CON TUS DATOS
         const usuario = 'spneider30@gmail.com'; 
         const password = '1004355474ns';
         const idDispositivo = '67942232';
@@ -50,10 +66,10 @@
                     marker.setLatLng([bus.latitude, bus.longitude]);
                     map.setView([bus.latitude, bus.longitude], 15);
                 }
-            } catch (e) { console.error("Error conectando:", e); }
+            } catch (e) { console.error("Error:", e); }
         }
 
-        setInterval(actualizarPosicion, 10000); // Se actualiza cada 10 seg
+        setInterval(actualizarPosicion, 10000);
         actualizarPosicion();
     </script>
 </body>
