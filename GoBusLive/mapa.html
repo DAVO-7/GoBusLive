@@ -2,8 +2,6 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <link rel="icon" type="image/svg+xml" href="favicon.svg">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GoBusLive - Mapa</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -19,19 +17,6 @@
         .btn-volver {
             background: #0f172a; color: #fff; padding: 12px 16px;
             border-radius: 10px; text-decoration: none; font-weight: bold;
-            white-space: nowrap;
-        }
-        .search-bar {
-            flex-grow: 1; background: #0f172a; padding: 8px;
-            border-radius: 10px; display: flex; align-items: center;
-        }
-        .search-bar input {
-            background: transparent; border: none; color: white;
-            padding: 5px; width: 100%; font-size: 14px;
-        }
-        .search-bar button {
-            background: #f5a623; border: none; padding: 8px 12px;
-            border-radius: 6px; font-weight: bold; cursor: pointer;
         }
     </style>
 </head>
@@ -39,26 +24,20 @@
     <div id="map"></div>
     <div class="controls-container">
         <a href="index.html" class="btn-volver">← Volver</a>
-        <div class="search-bar">
-            <input type="text" placeholder="ID Bus: 67942232">
-            <button>Buscar</button>
-        </div>
     </div>
 
     <script>
-        // 1. Inicializar mapa
         const map = L.map('map').setView([4.4389, -75.2322], 13);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
         
-        // Marcador del bus
+        // Marcador que se moverá
         var marker = L.marker([0, 0]).addTo(map);
 
-        // 2. CONFIGURACIÓN (REEMPLAZA ESTOS DATOS)
-        const usuario = 'spneider30@mail.com'; 
+        // CONFIGURACIÓN DE TRACCAR
+        const usuario = 'spneider30@gmail.com'; 
         const password = '1004355474ns';
         const idDispositivo = '67942232';
 
-        // 3. Conexión con Traccar
         async function actualizarPosicion() {
             try {
                 const respuesta = await fetch(`https://demo.traccar.org/api/positions`, {
@@ -70,13 +49,11 @@
                 if (bus) {
                     marker.setLatLng([bus.latitude, bus.longitude]);
                     map.setView([bus.latitude, bus.longitude], 15);
-                    console.log("Bus actualizado en:", bus.latitude, bus.longitude);
                 }
-            } catch (e) { console.error("Error conectando a Traccar:", e); }
+            } catch (e) { console.error("Error conectando:", e); }
         }
 
-        // Actualizar cada 10 segundos
-        setInterval(actualizarPosicion, 10000);
+        setInterval(actualizarPosicion, 10000); // Se actualiza cada 10 seg
         actualizarPosicion();
     </script>
 </body>
