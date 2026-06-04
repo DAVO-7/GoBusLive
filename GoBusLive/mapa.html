@@ -2,75 +2,53 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <link rel="icon" type="image/svg+xml" href="favicon.svg">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GoBusLive - Mapa</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; }
-        html, body { width: 100%; height: 100%; overflow: hidden; }
-        #map { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
-
-        .controls-container {
-            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
-            z-index: 1000; display: flex; gap: 10px; width: 90%; max-width: 500px;
-        }
-        .btn-volver {
-            background: #0f172a; color: #fff; padding: 12px 16px;
-            border-radius: 10px; text-decoration: none; font-weight: bold; white-space: nowrap;
-        }
-        .search-bar {
-            flex-grow: 1; background: #0f172a; padding: 8px;
-            border-radius: 10px; display: flex; align-items: center;
-        }
-        .search-bar input {
-            background: transparent; border: none; color: white;
-            padding: 5px; width: 100%; font-size: 14px;
-        }
-        .search-bar button {
-            background: #f5a623; border: none; padding: 8px 12px;
-            border-radius: 6px; font-weight: bold; cursor: pointer;
-        }
+        body { margin: 0; padding: 0; }
+        #map { width: 100vw; height: 100vh; }
+        .controls { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 1000; background: #0f172a; padding: 10px; border-radius: 10px; display: flex; gap: 5px; }
+        input { background: transparent; border: none; color: white; padding: 5px; width: 100px; }
+        button { background: #f5a623; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-weight: bold; }
     </style>
 </head>
 <body>
     <div id="map"></div>
-    <div class="controls-container">
-        <a href="index.html" class="btn-volver">← Volver</a>
-        <div class="search-bar">
-            <input type="text" id="busIdInput" placeholder="ID Bus: 67942232">
-            <button onclick="actualizarPosicion()">Buscar</button>
-        </div>
+    <div class="controls">
+        <a href="index.html" style="color:white; text-decoration:none; padding:5px;">← Volver</a>
+        <input type="text" id="busId" placeholder="ID (ej: 58661)">
+        <button onclick="buscarBus()">Buscar</button>
     </div>
 
     <script>
         const map = L.map('map').setView([4.4389, -75.2322], 13);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-        var marker = L.marker([4.4389, -75.2322]).addTo(map);
+        const marker = L.marker([4.4389, -75.2322]).addTo(map);
 
-        // RELLENA ESTO CON TUS DATOS
-        const usuario = 'spneider30@gmail.com'; 
-        const password = '1004355474ns';
-        const idDispositivo = '67942232';
+        async function buscarBus() {
+            const id = document.getElementById('busId').value;
+            // Conectamos directamente a tu servidor en Railway para mayor estabilidad
+            const url = 'https://gobuslive-production.up.railway.app/posiciones';
 
-        async function actualizarPosicion() {
             try {
-                const respuesta = await fetch(`https://demo.traccar.org/api/positions`, {
-                    headers: { 'Authorization': 'Basic ' + btoa(usuario + ':' + password) }
-                });
-                const datos = await respuesta.json();
-                const bus = datos.find(p => p.deviceId == idDispositivo);
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                // Buscamos el ID en los datos que devuelve tu servidor
+                const bus = data[id];
 
                 if (bus) {
-                    marker.setLatLng([bus.latitude, bus.longitude]);
-                    map.setView([bus.latitude, bus.longitude], 15);
+                    marker.setLatLng([bus.lat, bus.lon]);
+                    map.setView([bus.lat, bus.lon], 15);
+                } else {
+                    alert("Bus no encontrado. Verifica el ID.");
                 }
-            } catch (e) { console.error("Error:", e); }
+            } catch (error) {
+                console.error("Error al obtener datos:", error);
+                alert("Error de conexión con el servidor.");
+            }
         }
-
-        setInterval(actualizarPosicion, 10000);
-        actualizarPosicion();
     </script>
 </body>
 </html>
